@@ -1,0 +1,27 @@
+{
+  "name": "life-machine",
+  "version": "1.0.0",
+  "description": "Keep your npm packages alive with minimal effort ⚕️",
+  "main": "bin/main.js",
+  "bin": {
+    "life-machine": "bin/main.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "life-machine",
+    "npm",
+    "dependabot"
+  ],
+  "author": "greencoder001",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/greencoder001/life-machine.git"
+  },
+  "bugs": {
+    "url": "https://github.com/greencoder001/life-machine/issues"
+  },
+  "homepage": "https://github.com/greencoder001/life-machine#readme"
+}

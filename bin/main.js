@@ -109,7 +109,7 @@ function retrieveSemVer(oldV, type) {
     return parts.join('.')
 }
 
-function updateVersion (type) {
+async function updateVersion (type) {
     // Read package-lock.json file
     const packageLockData = fs.readFileSync('package-lock.json');
     const packageLockJson = JSON.parse(packageLockData);
@@ -118,7 +118,7 @@ function updateVersion (type) {
     const packageData = fs.readFileSync('package.json');
     const packageJson = JSON.parse(packageData);
 
-    const v = retrieveSemVer(packageJson.version, type)
+    const v = retrieveSemVer(await latestTag(), type)
     console.log('Next semver:', v)
 
     packageJson.version = v
@@ -130,6 +130,16 @@ function updateVersion (type) {
 
     // Write updated package-lock.json back to file
     fs.writeFileSync('package-lock.json', JSON.stringify(packageLockJson, null, 2));
+}
+
+async function oldPk (n) {
+    const res = await axios.get(`https://registry.npmjs.org/${n}`)
+    return res.data.versions[res.data['dist-tags'].latest]
+}
+
+async function latestTag (n) {
+    const res = await axios.get(`https://registry.npmjs.org/${n}`)
+    return res.data['dist-tags'].latest
 }
 
 if (process.argv[2] === '?workflow') {
@@ -154,12 +164,9 @@ if (process.argv[2] === '?workflow') {
     ;(async () => {
         if (!fs.existsSync(path.join(process.cwd(), 'package.json'))) throwError('package.json must exist in cwd')
         if (!fs.existsSync(path.join(process.cwd(), 'package-lock.json'))) throwError('package-lock.json must exist in cwd')
-        const oldPkgJson = fs.readJSONSync(path.join(process.cwd(), 'package.json'))
         updatePackageJsonWithPackageLockJson()
         const pkgJson = fs.readJSONSync(path.join(process.cwd(), 'package.json'))
-
-        console.log('OLDPKGJSON', oldPkgJson)
-        console.log('NEWPKGJSON', oldPkgJson)
+        const oldPkgJson = await oldPk(pkgJson.name)
 
         if (config.manualOnly) {
             await sendDiscordMsg(`:warning: @everyone Package ${pkgJson.name} has new dependency updates available! Didn't publish because manualOnly is set to true!`)
@@ -212,7 +219,7 @@ if (process.argv[2] === '?workflow') {
         
 
         console.log('Current: v' + pkgJson.version)
-        updateVersion(config.versionType || 'patch')
+        await updateVersion(config.versionType || 'patch')
 
         // Get new version
         const versionForPublish = fs.readJSONSync(path.join(process.cwd(), 'package.json')).version

@@ -183,8 +183,8 @@ if (process.argv[2] === '?workflow') {
                 ...latestPkgJson.devDependencies
             }
 
-            for (const [lName, lVersion] of Object.entries(sharedDeps)) {
-                for (const [oName, oVersion] of Object.entries(latestSharedDeps)) {
+            for (let [lName, lVersion] of Object.entries(sharedDeps)) {
+                for (let [oName, oVersion] of Object.entries(latestSharedDeps)) {
                     if (lName === oName) {
                         if (lVersion === oVersion) {
                             console.log(`⚕️ ${lName}: Unchanged ${lVersion} - ${oVersion}`)

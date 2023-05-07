@@ -140,7 +140,19 @@ if (process.argv[2] === '?workflow') {
         // PR will be merged in workflow
 
         // Publish package
-        
+        try {
+            await npmPublish({
+                token: NPM_TOKEN,
+                package: pkgJson.name,
+                logger: {
+                    debug: console.log,
+                    info: console.log,
+                    error: console.log
+                }
+            })
+        } catch (err) {
+            throwError(`Failed to publish package ${pkgJson.name}, because npm publish command failed. This is probably because your NPM_TOKEN is invalid. Error Message: ${err}`)
+        }
 
         if (config.discordNotifications.onPublish) await sendDiscordMsg('✅ Successfully published package ' + pkgJson.name + '@' + versionForPublish + + '!')
         console.log('✅ Successfully published package ' + pkgJson.name + '@' + versionForPublish + '!')

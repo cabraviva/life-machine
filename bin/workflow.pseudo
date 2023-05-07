@@ -1,6 +1,0 @@
-- Login to npm
-- npm publish
-- merge PR # In workflow
-- if discordNotifications.onPublish:
-    - sendDiscordMsg("Published new Version X.Y.Z")
-exit(0) or with exit code of npm commands

@@ -73,9 +73,10 @@ function updatePackageJsonWithPackageLockJson() {
             Object.keys(packageJson[dependencyType]).forEach((packageName) => {
                 const packageVersion = packageJson[dependencyType][packageName];
                 // Check if package is listed in package-lock.json
-                if (packageLockJson.dependencies[packageName]) {
+                const lockPkg = packageLockJson.packages[packageName] || packageLockJson.packages['node_modules/' + packageName]
+                if (lockPkg) {
                     // Get the package version from package-lock.json
-                    const lockFileVersion = packageLockJson.dependencies[packageName].version;
+                    const lockFileVersion = lockPkg.version;
                     // Check if the package version in package.json is a string or an object
                     if (typeof packageVersion === 'string') {
                         // Update version with ^ prefix

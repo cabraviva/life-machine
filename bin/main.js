@@ -119,6 +119,7 @@ function updateVersion (type) {
     const packageJson = JSON.parse(packageData);
 
     const v = retrieveSemVer(packageJson.version, type)
+    console.log('Next semver:', v)
 
     packageJson.version = v
     packageLockJson.version = v
@@ -152,8 +153,9 @@ if (process.argv[2] === '?workflow') {
     
     ;(async () => {
         if (!fs.existsSync(path.join(process.cwd(), 'package.json'))) throwError('package.json must exist in cwd')
-        const pkgJson = fs.readJSONSync(path.join(process.cwd(), 'package.json'))
+        const oldPkgJson = fs.readJSONSync(path.join(process.cwd(), 'package.json'))
         updatePackageJsonWithPackageLockJson()
+        const pkgJson = fs.readJSONSync(path.join(process.cwd(), 'package.json'))
 
         if (config.manualOnly) {
             await sendDiscordMsg(`:warning: @everyone Package ${pkgJson.name} has new dependency updates available! Didn't publish because manualOnly is set to true!`)
@@ -166,20 +168,19 @@ if (process.argv[2] === '?workflow') {
         }
 
         if (config.manualCheckOnMajor) {
-            if (typeof pkgJson.dependencies !== 'object') pkgJson.dependencies = {}
-            if (typeof pkgJson.devDependencies !== 'object') pkgJson.devDependencies = {}
+            if (typeof oldPkgJson.dependencies !== 'object') oldPkgJson.dependencies = {}
+            if (typeof oldPkgJson.devDependencies !== 'object') oldPkgJson.devDependencies = {}
             const sharedDeps = {
-                ...pkgJson.dependencies,
-                ...pkgJson.devDependencies
+                ...oldPkgJson.dependencies,
+                ...oldPkgJson.devDependencies
             }
-            // Get latest pkgJson from npm
-            const res = await axios.get('https://registry.npmjs.org/' + pkgJson.name)
-            const latestPkgJson = res.data.versions[res.data['dist-tags'].latest]
+            // Get latest pkgJson
+            const latestPkgJson = pkgJson
             if (typeof latestPkgJson.dependencies !== 'object') latestPkgJson.dependencies = {}
             if (typeof latestPkgJson.devDependencies !== 'object') latestPkgJson.devDependencies = {}
             const latestSharedDeps = {
-                ...pkgJson.dependencies,
-                ...pkgJson.devDependencies
+                ...latestPkgJson.dependencies,
+                ...latestPkgJson.devDependencies
             }
 
             for (const [lName, lVersion] of Object.entries(sharedDeps)) {
@@ -204,11 +205,14 @@ if (process.argv[2] === '?workflow') {
                 }
             }
         }
+        
 
+        console.log('Current: v' + pkgJson.version)
         updateVersion(config.versionType || 'patch')
 
         // Get new version
         const versionForPublish = fs.readJSONSync(path.join(process.cwd(), 'package.json')).version
+        console.log('Will publish: v' + versionForPublish)
 
         // PR will be merged in workflow
 

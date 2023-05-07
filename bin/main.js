@@ -58,6 +58,41 @@ function runCmd(cmd, args = [], isTestCmd = false, pkgName = '', env = {}) {
     });
 }
 
+function updatePackageJsonWithPackageLockJson() {
+    // Read package-lock.json file
+    const packageLockData = fs.readFileSync('package-lock.json');
+    const packageLockJson = JSON.parse(packageLockData);
+
+    // Read package.json file
+    const packageData = fs.readFileSync('package.json');
+    const packageJson = JSON.parse(packageData);
+
+    // Loop through dependencies and devDependencies in package.json
+    ['dependencies', 'devDependencies'].forEach((dependencyType) => {
+        if (packageJson[dependencyType]) {
+            Object.keys(packageJson[dependencyType]).forEach((packageName) => {
+                const packageVersion = packageJson[dependencyType][packageName];
+                // Check if package is listed in package-lock.json
+                if (packageLockJson.dependencies[packageName]) {
+                    // Get the package version from package-lock.json
+                    const lockFileVersion = packageLockJson.dependencies[packageName].version;
+                    // Check if the package version in package.json is a string or an object
+                    if (typeof packageVersion === 'string') {
+                        // Update version with ^ prefix
+                        packageJson[dependencyType][packageName] = `^${lockFileVersion}`;
+                    } else {
+                        // Update the version property of the package object with ^ prefix
+                        packageJson[dependencyType][packageName].version = `^${lockFileVersion}`;
+                    }
+                }
+            });
+        }
+    });
+
+    // Write updated package.json back to file
+    fs.writeFileSync('package.json', JSON.stringify(packageJson, null, 2));
+}
+
 if (process.argv[2] === '?workflow') {
     // Inside of an workflow
     const NPM_TOKEN = !process.argv[3] ? '' : process.argv[3].toString()
@@ -79,6 +114,7 @@ if (process.argv[2] === '?workflow') {
     
     ;(async () => {
         if (!fs.existsSync(path.join(process.cwd(), 'package.json'))) throwError('package.json must exist in cwd')
+        updatePackageJsonWithPackageLockJson()
         const pkgJson = fs.readJSONSync(path.join(process.cwd(), 'package.json'))
 
         if (config.manualOnly) {

@@ -1,0 +1,11 @@
+{
+    "manualCheckOnMajor": true,
+    "runTests": true,
+    "manualOnly": false,
+    "testCommand": "npm test",
+    "discordNotifications": {
+        "onPublish": true,
+        "onAttentionNeeded": true
+    },
+    "versionType": "patch"
+}

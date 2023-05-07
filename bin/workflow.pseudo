@@ -1,22 +1,6 @@
-- if manualOnly:
-    - sendSlackMsg("New pkg updates availabke, check PR #XYZ")
-    - break
-    - exit(1)
-- else -> continue
-
-- npm ci # Done in workflow
-- if shoudldRunTests:
-    - Run tests:
-        Sucess -> continue
-        else -> break; exit(1)
-- Compare changed packages to latest on npm registry:
-    - if major change:
-        if manualCheckOnMajor -> sendSlackMsg("Major version update; Check manuall"); break; exit(1)
-        else ->  ontinue
-    - else -> continue
-- npm version patch
 - Login to npm
 - npm publish
-- if slackNotifications.onPublish:
-    - sendSlackMsg("Published new Version X.Y.Z")
+- merge PR # In workflow
+- if discordNotifications.onPublish:
+    - sendDiscordMsg("Published new Version X.Y.Z")
 exit(0) or with exit code of npm commands

@@ -153,9 +153,13 @@ if (process.argv[2] === '?workflow') {
     
     ;(async () => {
         if (!fs.existsSync(path.join(process.cwd(), 'package.json'))) throwError('package.json must exist in cwd')
+        if (!fs.existsSync(path.join(process.cwd(), 'package-lock.json'))) throwError('package-lock.json must exist in cwd')
         const oldPkgJson = fs.readJSONSync(path.join(process.cwd(), 'package.json'))
         updatePackageJsonWithPackageLockJson()
         const pkgJson = fs.readJSONSync(path.join(process.cwd(), 'package.json'))
+
+        console.log('OLDPKGJSON', oldPkgJson)
+        console.log('NEWPKGJSON', oldPkgJson)
 
         if (config.manualOnly) {
             await sendDiscordMsg(`:warning: @everyone Package ${pkgJson.name} has new dependency updates available! Didn't publish because manualOnly is set to true!`)

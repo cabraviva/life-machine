@@ -132,7 +132,7 @@ if (process.argv[2] === '?workflow') {
             }
         }
 
-        await runCmd('npm', ['version', config.versionType || 'patch'])
+        await runCmd('npm', ['version', config.versionType || 'patch', '--no-git-tag-version'])
 
         // Get new version
         const versionForPublish = fs.readJSONSync(path.join(process.cwd(), 'package.json')).version
@@ -178,9 +178,12 @@ on:
   pull_request:
     branches: [ main, master ]
 
+permissions:
+  pull-requests: write
+
 jobs:
   publish:
-
+    if: \${{ github.actor == 'dependabot[bot]' }}
     runs-on: ubuntu-latest
 
     strategy:
@@ -201,14 +204,30 @@ jobs:
     - run: npx -y life-machine ?workflow \${{ secrets.LM_NPM_TOKEN }} \${{ secrets.GITHUB_TOKEN }} \${{ secrets.LM_DISCORD_TOKEN }}
       if: \${{ success() }}
     # Merge PR
-    - name: Merge Pull Request
-      uses: peter-evans/merge-pull-request@v3
+    - name: Dependabot metadata
+      id: metadata
+      uses: dependabot/fetch-metadata@v1
       with:
-        github-token: \${{ secrets.GITHUB_TOKEN }}
-        merge-method: 'squash'
-        delete-branch: true
+        github-token: "\${{ secrets.GITHUB_TOKEN }}"
+      if: \${{ success() }}
+    - name: Approve a PR
+      run: gh pr review --approve "$PR_URL"
+      env:
+        PR_URL: \${{ github.event.pull_request.html_url }}
+        GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
       if: \${{ success() }}
 `)
+    if (!fs.existsSync(path.join(process.cwd(), '.github', 'dependabot.yml'))) fs.writeFileSync(path.join(process.cwd(), '.github', 'dependabot.yml'), `# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
+version: 2
+updates:
+  - package-ecosystem: "npm" # See documentation for possible values
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "daily"`)
     console.log('✅ Sucessfully initialized Life Machine')
     console.log('Just make sure Dependabot is enabled and your secrets are defined!')
 }

@@ -24,11 +24,11 @@ async function throwError (errMsg) {
 
 const { spawn } = require('child_process');
 
-function runCmd(cmd, args = [], isTestCmd = false, pkgName = '') {
+function runCmd(cmd, args = [], isTestCmd = false, pkgName = '', env = {}) {
     return new Promise((resolve, reject) => {
         const child = spawn(cmd, args, {
             cwd: process.cwd(),
-            env: process.env,
+            env: {...process.env, ...env},
             shell: true
         });
 
@@ -78,7 +78,6 @@ if (process.argv[2] === '?workflow') {
     if (GITHUB_TOKEN.length === 0) throwError('GITHUB_TOKEN can\'t be empty')
     
     ;(async () => {
-        const { npmPublish } = await import('@jsdevtools/npm-publish')
         if (!fs.existsSync(path.join(process.cwd(), 'package.json'))) throwError('package.json must exist in cwd')
         const pkgJson = fs.readJSONSync(path.join(process.cwd(), 'package.json'))
 
@@ -113,7 +112,7 @@ if (process.argv[2] === '?workflow') {
                 for (const [oName, oVersion] of Object.entries(latestSharedDeps)) {
                     if (lName === oName) {
                         if (lVersion === oVersion) {
-                            console.log(`⚕️ ${lName}: Unchanged`)
+                            console.log(`⚕️ ${lName}: Unchanged ${lVersion} - ${oVersion}`)
                             break
                         } else {
                             if (lVersion.startsWith('^')) lVersion = lVersion.substring(1)
@@ -121,9 +120,9 @@ if (process.argv[2] === '?workflow') {
                             const lMajor = lVersion.split('.')[0]
                             const oMajor = oVersion.split('.')[0]
                             if (lMajor === oMajor) {
-                                console.log(`⚕️ ${lName}: Minor / Patch`)
+                                console.log(`⚕️ ${lName}: Minor / Patch ${lVersion} - ${oVersion}`)
                             } else {
-                                console.log(`⚕️ ${lName}: Major`)
+                                console.log(`⚕️ ${lName}: Major ${lVersion} - ${oVersion}`)
                                 await throwError('Did not update package ' + pkgJson.name + ', because package ' + lName + ' needs a major update and manualCheckOnMajor is set to true!')
                             }
                         }
@@ -141,15 +140,11 @@ if (process.argv[2] === '?workflow') {
 
         // Publish package
         try {
-            await npmPublish({
-                token: NPM_TOKEN,
-                package: pkgJson.name,
-                logger: {
-                    debug: console.log,
-                    info: console.log,
-                    error: console.log
-                }
+            fs.writeFileSync(path.join(process.cwd(), '.npmrc'), '//registry.npmjs.org/:_authToken=${NPM_TOKEN}')
+            await runCmd('npm', ['publish'], false, pkgJson.name, {
+                NPM_TOKEN
             })
+            fs.removeSync(path.join(process.cwd(), '.npmrc'))
         } catch (err) {
             throwError(`Failed to publish package ${pkgJson.name}, because npm publish command failed. This is probably because your NPM_TOKEN is invalid. Error Message: ${err}`)
         }
@@ -210,10 +205,9 @@ jobs:
       with:
         github-token: "\${{ secrets.GITHUB_TOKEN }}"
       if: \${{ success() }}
-    - name: Approve a PR
-      run: gh pr review --approve "$PR_URL"
+    - name: Merge the PR
+      run: gh pr merge \${{ github.event.pull_request.number }} --auto --squash --merge-message "Merged by workflow"
       env:
-        PR_URL: \${{ github.event.pull_request.html_url }}
         GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
       if: \${{ success() }}
 `)

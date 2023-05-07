@@ -94,6 +94,43 @@ function updatePackageJsonWithPackageLockJson() {
     fs.writeFileSync('package.json', JSON.stringify(packageJson, null, 2));
 }
 
+function retrieveSemVer(oldV, type) {
+    const parts = oldV.split('.')
+    if (type === 'patch') {
+        parts[2] = (parseInt(parts[2]) + 1).toString()
+    } else if (type === 'minor') {
+        parts[2] = '0'
+        parts[1] = (parseInt(parts[1]) + 1).toString()
+    } else if (type === 'major') {
+        parts[2] = '0'
+        parts[1] = '0'
+        parts[0] = (parseInt(parts[0]) + 1).toString()
+    }
+    return parts.join('.')
+}
+
+function updateVersion (type) {
+    // Read package-lock.json file
+    const packageLockData = fs.readFileSync('package-lock.json');
+    const packageLockJson = JSON.parse(packageLockData);
+
+    // Read package.json file
+    const packageData = fs.readFileSync('package.json');
+    const packageJson = JSON.parse(packageData);
+
+    const v = retrieveSemVer(packageJson.version, type)
+
+    packageJson.version = v
+    packageLockJson.version = v
+    packageLockJson.packages[''].version = v
+
+    // Write updated package.json back to file
+    fs.writeFileSync('package.json', JSON.stringify(packageJson, null, 2));
+
+    // Write updated package-lock.json back to file
+    fs.writeFileSync('package-lock.json', JSON.stringify(packageLockJson, null, 2));
+}
+
 if (process.argv[2] === '?workflow') {
     // Inside of an workflow
     const NPM_TOKEN = !process.argv[3] ? '' : process.argv[3].toString()
@@ -115,8 +152,8 @@ if (process.argv[2] === '?workflow') {
     
     ;(async () => {
         if (!fs.existsSync(path.join(process.cwd(), 'package.json'))) throwError('package.json must exist in cwd')
-        updatePackageJsonWithPackageLockJson()
         const pkgJson = fs.readJSONSync(path.join(process.cwd(), 'package.json'))
+        updatePackageJsonWithPackageLockJson()
 
         if (config.manualOnly) {
             await sendDiscordMsg(`:warning: @everyone Package ${pkgJson.name} has new dependency updates available! Didn't publish because manualOnly is set to true!`)
@@ -168,7 +205,7 @@ if (process.argv[2] === '?workflow') {
             }
         }
 
-        await runCmd('npm', ['version', config.versionType || 'patch', '--no-git-tag-version'])
+        updateVersion(config.versionType || 'patch')
 
         // Get new version
         const versionForPublish = fs.readJSONSync(path.join(process.cwd(), 'package.json')).version

@@ -185,7 +185,7 @@ if (process.argv[2] === '?workflow') {
             throwError(`Failed to publish package ${pkgJson.name}, because npm publish command failed. This is probably because your NPM_TOKEN is invalid. Error Message: ${err}`)
         }
 
-        if (config.discordNotifications.onPublish) await sendDiscordMsg('✅ Successfully published package ' + pkgJson.name + '@' + versionForPublish + + '!')
+        if (config.discordNotifications.onPublish) await sendDiscordMsg('✅ Successfully published package ' + pkgJson.name + '@' + versionForPublish + '!')
         console.log('✅ Successfully published package ' + pkgJson.name + '@' + versionForPublish + '!')
         process.exit(0)
     })();

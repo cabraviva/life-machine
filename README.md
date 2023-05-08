@@ -58,6 +58,8 @@ npx -y life-machine
  |discordNotifications.onPublish|Defines wether you want to receive a discord message when your package was published successfully|true\|false|true|
  |discordNotifications.onAttentionNeeded|Defines wether you want to receive a discord message when your package couldn't be published. It's recommended to never touch this|true\|false|true|
  |versionType|Defines what version type should be used to generate the version tag for your package|"major"\|"minor"\|"patch"|"patch"|
+ |registry|A custom registry url, without protocol|string|"registry.npmjs.org"
+ |rebaseTries|When Dependabot triggers multiple releases at a time (which happens most of the time), there's a good chance that the calculated version was already published for another package. To prevent this, you can set the number of tries to republish|number|5 (or number of your dependencies / what you can afford)|
 
 # What to do when manual attention is needed
  If you receive a message saying your package wasn't published you should first check why:

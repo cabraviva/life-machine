@@ -24,8 +24,11 @@ async function throwError (errMsg) {
 
 const { spawn } = require('child_process');
 
-function runCmd(cmd, args = [], isTestCmd = false, pkgName = '', env = {}) {
+function runCmd(cmd, args = [], isTestCmd = false, pkgName = '', env = {}, ehandler = async (err, msg) => {
+    await throwError(err)
+}) {
     return new Promise((resolve, reject) => {
+        let msg = ''
         const child = spawn(cmd, args, {
             cwd: process.cwd(),
             env: {...process.env, ...env},
@@ -34,10 +37,12 @@ function runCmd(cmd, args = [], isTestCmd = false, pkgName = '', env = {}) {
 
         child.stdout.on('data', (data) => {
             console.log(data.toString());
+            msg += `${data}`
         });
 
         child.stderr.on('data', (data) => {
             console.error(data.toString());
+            msg += `${data}`
         });
 
         child.on('exit', (code) => {
@@ -45,9 +50,9 @@ function runCmd(cmd, args = [], isTestCmd = false, pkgName = '', env = {}) {
                 resolve();
             } else {
                 if (!isTestCmd) {
-                    throwError(`Command ${cmd} ${args.join(' ')} exited with code ${code}`);  
+                    ehandler(`Command ${cmd} ${args.join(' ')} exited with code ${code}`, msg).then(resolve);  
                 } else {
-                    throwError(`Did not publish package ${pkgName}, because the tests failed`)
+                    ehandler(`Did not publish package ${pkgName}, because the tests failed`, msg)
                 }
             }
         });
@@ -216,26 +221,40 @@ if (process.argv[2] === '?workflow') {
                 }
             }
         }
+
+        let shouldTryToPublish = true
+        let rebases = 0
         
+        while (shouldTryToPublish) {
+            console.log('Current: v' + pkgJson.version)
+            await updateVersion(config.versionType || 'patch')
 
-        console.log('Current: v' + pkgJson.version)
-        await updateVersion(config.versionType || 'patch')
+            // Get new version
+            const versionForPublish = fs.readJSONSync(path.join(process.cwd(), 'package.json')).version
+            console.log('Will publish: v' + versionForPublish)
 
-        // Get new version
-        const versionForPublish = fs.readJSONSync(path.join(process.cwd(), 'package.json')).version
-        console.log('Will publish: v' + versionForPublish)
+            // PR will be merged in workflow
 
-        // PR will be merged in workflow
-
-        // Publish package
-        try {
-            fs.writeFileSync(path.join(process.cwd(), '.npmrc'), `//${config.registry || 'registry.npmjs.org'}/:_authToken=\${NPM_TOKEN}`)
-            await runCmd('npm', ['publish'], false, pkgJson.name, {
-                NPM_TOKEN
-            })
-            fs.removeSync(path.join(process.cwd(), '.npmrc'))
-        } catch (err) {
-            throwError(`Failed to publish package ${pkgJson.name}, because npm publish command failed. This is probably because your NPM_TOKEN is invalid. Error Message: ${err}`)
+            // Publish package
+            try {
+                fs.writeFileSync(path.join(process.cwd(), '.npmrc'), `//${config.registry || 'registry.npmjs.org'}/:_authToken=\${NPM_TOKEN}`)
+                await runCmd('npm', ['publish'], false, pkgJson.name, {
+                    NPM_TOKEN
+                }, async (err, msg) => {
+                    console.log(err)
+                    if (msg.includes('code E403')) {
+                        // Can't publish same version
+                        shouldTryToPublish = config.rebaseTries > rebases
+                    } else {
+                        await throwError(err)
+                        shouldTryToPublish = false
+                    }
+                })
+                fs.removeSync(path.join(process.cwd(), '.npmrc'))
+            } catch (err) {
+                throwError(`Failed to publish package ${pkgJson.name}, because npm publish command failed. This is probably because your NPM_TOKEN is invalid. Error Message: ${err}`)
+            }
+            rebases += 1
         }
 
         if (config.discordNotifications.onPublish) await sendDiscordMsg('✅ Successfully published package ' + pkgJson.name + '@' + versionForPublish + '!')
@@ -249,13 +268,14 @@ if (process.argv[2] === '?workflow') {
         manualCheckOnMajor: true,
         runTests: true,
         manualOnly: false,
-        registry: 'registry.npmjs.org',
         testCommand: 'npm test',
         discordNotifications: {
             onPublish: true,
             onAttentionNeeded: true
         },
-        versionType: 'patch'
+        versionType: 'patch',
+        registry: 'registry.npmjs.org',
+        rebaseTries: 5
     }, null, 4))
     fs.ensureFileSync(path.join(process.cwd(), 'package.json'))
     const pkj = fs.readJSONSync(path.join(process.cwd(), 'package.json'))

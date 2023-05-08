@@ -229,7 +229,7 @@ if (process.argv[2] === '?workflow') {
 
         // Publish package
         try {
-            fs.writeFileSync(path.join(process.cwd(), '.npmrc'), '//registry.npmjs.org/:_authToken=${NPM_TOKEN}')
+            fs.writeFileSync(path.join(process.cwd(), '.npmrc'), `//${config.registry || 'registry.npmjs.org'}/:_authToken=\${NPM_TOKEN}`)
             await runCmd('npm', ['publish'], false, pkgJson.name, {
                 NPM_TOKEN
             })
@@ -249,6 +249,7 @@ if (process.argv[2] === '?workflow') {
         manualCheckOnMajor: true,
         runTests: true,
         manualOnly: false,
+        registry: 'registry.npmjs.org',
         testCommand: 'npm test',
         discordNotifications: {
             onPublish: true,
@@ -256,6 +257,16 @@ if (process.argv[2] === '?workflow') {
         },
         versionType: 'patch'
     }, null, 4))
+    fs.ensureFileSync(path.join(process.cwd(), 'package.json'))
+    const pkj = fs.readJSONSync(path.join(process.cwd(), 'package.json'))
+    if (!pkj.scripts) pkj.scripts = {}
+    pkj.script['life-machine'] = 'life-machine $*'
+    const { execSync } = require('child_process')
+    try {
+        execSync('npm install --save-dev life-machine')
+    } catch {
+        console.log('[❌] Automatic install failed, please run this: npm i -D life-machine')
+    }
     fs.writeFileSync((path.join(process.cwd(), '.github', 'workflows', 'life-machine.yml')), `name: Life Machine
 
 on:
@@ -285,7 +296,7 @@ jobs:
     # Installs npm packages
     - run: npm ci
     # Runs Life Machine
-    - run: npx -y life-machine ?workflow \${{ secrets.LM_NPM_TOKEN }} \${{ secrets.GITHUB_TOKEN }} \${{ secrets.LM_DISCORD_TOKEN }}
+    - run: npm run life-machine ?workflow \${{ secrets.LM_NPM_TOKEN }} \${{ secrets.GITHUB_TOKEN }} \${{ secrets.LM_DISCORD_TOKEN }}
       if: \${{ success() }}
     # Merge PR
     - name: Dependabot metadata

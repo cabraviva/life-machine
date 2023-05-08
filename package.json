@@ -1,31 +1,35 @@
 {
-  "name": "life-machine",
-  "version": "2.0.11",
-  "description": "Keep your npm packages alive with minimal effort ⚕️",
-  "main": "bin/main.js",
-  "bin": {
-    "life-machine": "bin/main.js"
-  },
-  "scripts": {
-    "test": "exit 0"
-  },
-  "keywords": [
-    "life-machine",
-    "npm",
-    "dependabot"
-  ],
-  "author": "greencoder001",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/greencoder001/life-machine.git"
-  },
-  "bugs": {
-    "url": "https://github.com/greencoder001/life-machine/issues"
-  },
-  "homepage": "https://github.com/greencoder001/life-machine#readme",
-  "dependencies": {
-    "axios": "^1.4.0",
-    "fs-extra": "^11.1.1"
-  }
+    "name": "life-machine",
+    "version": "2.0.11",
+    "description": "Keep your npm packages alive with minimal effort ⚕️",
+    "main": "bin/main.js",
+    "bin": {
+        "life-machine": "bin/main.js"
+    },
+    "scripts": {
+        "test": "exit 0",
+        "life-machine": "life-machine $*"
+    },
+    "keywords": [
+        "life-machine",
+        "npm",
+        "dependabot"
+    ],
+    "author": "greencoder001",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/greencoder001/life-machine.git"
+    },
+    "bugs": {
+        "url": "https://github.com/greencoder001/life-machine/issues"
+    },
+    "homepage": "https://github.com/greencoder001/life-machine#readme",
+    "dependencies": {
+        "axios": "^1.4.0",
+        "fs-extra": "^11.1.1"
+    },
+    "devDependencies": {
+        "life-machine": "^2.0.11"
+    }
 }

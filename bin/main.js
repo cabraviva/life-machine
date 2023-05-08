@@ -280,8 +280,9 @@ if (process.argv[2] === '?workflow') {
     fs.ensureFileSync(path.join(process.cwd(), 'package.json'))
     const pkj = fs.readJSONSync(path.join(process.cwd(), 'package.json'))
     if (!pkj.scripts) pkj.scripts = {}
-    pkj.script['life-machine'] = 'life-machine $*'
+    pkj.scripts['life-machine'] = 'life-machine $*'
     const { execSync } = require('child_process')
+    fs.writeFileSync(path.join(process.cwd(), 'package.json'), JSON.stringify(pkj, null, 4))
     try {
         execSync('npm install --save-dev life-machine')
     } catch {

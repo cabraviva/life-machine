@@ -222,10 +222,7 @@ if (process.argv[2] === '?workflow') {
             }
         }
 
-        let shouldTryToPublish = true
-        let rebases = 0
-        
-        while (shouldTryToPublish) {
+        setTimeout(async () => {
             console.log('Current: v' + pkgJson.version)
             await updateVersion(config.versionType || 'patch')
 
@@ -240,26 +237,16 @@ if (process.argv[2] === '?workflow') {
                 fs.writeFileSync(path.join(process.cwd(), '.npmrc'), `//${config.registry || 'registry.npmjs.org'}/:_authToken=\${NPM_TOKEN}`)
                 await runCmd('npm', ['publish'], false, pkgJson.name, {
                     NPM_TOKEN
-                }, async (err, msg) => {
-                    console.log(err)
-                    if (msg.includes('code E403')) {
-                        // Can't publish same version
-                        shouldTryToPublish = config.rebaseTries > rebases
-                    } else {
-                        await throwError(err)
-                        shouldTryToPublish = false
-                    }
                 })
                 fs.removeSync(path.join(process.cwd(), '.npmrc'))
             } catch (err) {
                 throwError(`Failed to publish package ${pkgJson.name}, because npm publish command failed. This is probably because your NPM_TOKEN is invalid. Error Message: ${err}`)
             }
-            rebases += 1
-        }
 
-        if (config.discordNotifications.onPublish) await sendDiscordMsg('✅ Successfully published package ' + pkgJson.name + '@' + versionForPublish + '!')
-        console.log('✅ Successfully published package ' + pkgJson.name + '@' + versionForPublish + '!')
-        process.exit(0)
+            if (config.discordNotifications.onPublish) await sendDiscordMsg('✅ Successfully published package ' + pkgJson.name + '@' + versionForPublish + '!')
+            console.log('✅ Successfully published package ' + pkgJson.name + '@' + versionForPublish + '!')
+            process.exit(0)
+        }, Math.random() * 10 * 1000)
     })();
 } else {
     // Setup

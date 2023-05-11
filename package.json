@@ -1,6 +1,6 @@
 {
     "name": "life-machine",
-    "version": "2.0.12",
+    "version": "2.0.13",
     "description": "Keep your npm packages alive with minimal effort ⚕️",
     "main": "bin/main.js",
     "bin": {
